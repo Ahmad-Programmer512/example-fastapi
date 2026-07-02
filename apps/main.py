@@ -16,6 +16,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def root(): 
+    return {"message": "helzx  s ds sd sd d  lo"}
 
 # models.Base.metadata.create_all(bind=engine)
 

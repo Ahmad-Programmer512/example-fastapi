@@ -9,10 +9,15 @@ router = APIRouter(
     tags=["Users"]
 )
 
-@router.post("/", response_model=schemas.UserOut)
+@router.post("/", response_model=schemas.UserOut, status_code=status.HTTP_201_CREATED)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-    user.password = hashing.hash(user.password)
-    new_user = models.User(**user.dict())
+    hashed_password = hashing.hash(user.password)
+    
+    # Use .model_dump() for Pydantic v2, or keep .dict() for v1
+    user_data = user.model_dump() 
+    user_data["password"] = hashed_password
+    
+    new_user = models.User(**user_data)
 
     db.add(new_user)
     db.commit()
@@ -25,6 +30,10 @@ def get_user(id: int, db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.id == id).first()
 
     if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User ith id: {id} does not exists")
+        # Fixed the typo from "ith" to "with"
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail=f"User with id: {id} does not exist"
+        )
     
     return user
