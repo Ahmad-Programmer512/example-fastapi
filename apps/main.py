@@ -4,7 +4,8 @@ from .routes import post, user, auth, vote
 from . import schemas, models
 from .database import engine
 
-app = FastAPI()
+# FIXED: Set redirect_slashes to False to kill the 307 redirect loops
+app = FastAPI(redirect_slashes=False)
 
 origin = ["*"]
 
@@ -18,9 +19,9 @@ app.add_middleware(
 
 @app.get("/")
 def root(): 
-    return {"message": "helzx  s ds sd sd d  lo"}
+    return {"message": "hello"}
 
-# models.Base.metadata.create_all(bind=engine)
+models.Base.metadata.create_all(bind=engine)
 
 app.include_router(post.router)
 app.include_router(auth.router)

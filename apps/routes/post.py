@@ -23,20 +23,34 @@ def get_posts(db: Session = Depends(get_db), user_id: int = Depends(oauth2.get_c
     return results
 
 
-@router.post("/", response_model=schemas.PostResponse)
+@router.post("/", response_model=schemas.PostResponse, status_code=status.HTTP_201_CREATED)
 def create_posts(post: schemas.Post_Create, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    new_post = models.Post(owner_id = current_user.id, **post.dict())
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
+    try:
+        new_post = models.Post(owner_id=current_user.id, **post.dict())
+        db.add(new_post)
+        db.commit()
+        db.refresh(new_post)
+        return new_post
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
-    return new_post
-
-@router.get("/{id}")
+@router.get("/{id}", response_model=schemas.PostOut)
 def get_post(id: str, db: Session = Depends(get_db), current_user: int = Depends(oauth2.get_current_user)):
-    post = db.query(models.Post).filter(models.Post.id == id).first()
+    post = db.query(models.Post, func.count(models.Vote.post_id).label("vote")).join(
+        models.Vote, models.Vote.post_id == models.Post.id, isouter=True
+    ).group_by(models.Post.id).filter(models.Post.id == id).first()
 
-    return {"data": post}
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with id: {id} was not found")
+
+    p, v = post
+
+    return {
+        "Post": p,
+        "vote": v
+    }
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: str, db: Session = Depends(get_db),  current_user: int = Depends(oauth2.get_current_user)):
