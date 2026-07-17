@@ -4,8 +4,8 @@ on: [push, pull_request]
 
 jobs:
   job1:
-  envirnoment:  
-    name: testing
+    envirnoment:  
+      name: testing
     env:
       DATABASE_HOSTNAME: ${{secrets.DATABASE_HOSTNAME}}
       DATABASE_PORT: ${{secrets.DATABASE_PORT}}
