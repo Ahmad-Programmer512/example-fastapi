@@ -1,49 +1,55 @@
 name: Build and Deploy Code
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
 
 jobs:
-  job1:
-    environment:  
+  test:
+    runs-on: ubuntu-latest
+
+    environment:
       name: testing
+
     env:
-      DATABASE_HOSTNAME: ${{secrets.DATABASE_HOSTNAME}}
-      DATABASE_PORT: ${{secrets.DATABASE_PORT}}
-      DATABASE_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
-      DATABASE_NAME: ${{secrets.DATABASE_NAME}}
-      DATABASE_USERNAME: ${{secrets.DATABASE_USERNAME}}
-      SECRET_KEY: ${{secrets.SECRET_KEY}}
-      ALGORITHM: ${{secrets.ALGORITHM}}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${{secrets.ACCESS_TOKEN_EXPIRE_MINUTES}}
- 
+      DATABASE_HOSTNAME: localhost
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+      DATABASE_NAME: ${{ secrets.DATABASE_NAME }}_test
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      ALGORITHM: ${{ secrets.ALGORITHM }}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
+
     services:
       postgres:
-        image: postgres
+        image: postgres:16
         env:
-          POSTGRES_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
-          POSTGRES_DB: ${{secrets.DATABASE_NAME}}_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.DATABASE_NAME }}_test
         ports:
-        - 5432:5432
-        options:
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s 
-          --health-retries 5
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
-    runs-on: ubuntu-latest
     steps:
-      - name: pulling git repo
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Install python version 3.9
+
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: update pip
-        run: python -m pip install --upgrade pip
-      - name: install all dependencies
-        run: pip install -r requirements.txt
-      - name: test with pytest
+
+      - name: Install dependencies
         run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
           pip install pytest
-          pytest
-        
+
+      - name: Run tests
+        run: pytest -v
