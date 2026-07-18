@@ -21,7 +21,7 @@ app.add_middleware(
 def root(): 
     return {"message": "hello"}
 
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 app.include_router(post.router)
 app.include_router(auth.router)
